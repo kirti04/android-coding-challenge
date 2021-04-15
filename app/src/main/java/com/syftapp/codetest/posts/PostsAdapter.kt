@@ -24,10 +24,7 @@ class PostsAdapter(private val presenter: PostsPresenter) : RecyclerView.Adapter
         }
     }
 
-    private val listDiffer = AsyncListDiffer(
-        this,
-        DiffUtilCallback
-    )
+    private val listDiffer = AsyncListDiffer(this, DiffUtilCallback)
 
     val data: List<Post>
         get() = listDiffer.currentList
@@ -54,7 +51,7 @@ class PostsAdapter(private val presenter: PostsPresenter) : RecyclerView.Adapter
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
         holder.bind(data[position])
 
-        //scale animation will be applied to each item of the list when new data is loaded
+        //scale animation will be applied to each item of the list when data is loaded
         setScaleAnimation(holder.itemView)
     }
 

@@ -16,6 +16,10 @@ interface BlogService {
     @GET("/comments")
     fun getComments(): Single<List<Comment>>
 
+    /*Passing page and limit query allows to load less data at one time and hence improved and quicker response.
+    This allows us to provide better user experience and we always have something to display when user opens the app in short interval of time.
+    Good pagination will help us with both to reduce the weight of the page we serve to the client and the query charge on the database.
+    For more flexibility we can pass page limit from presenter/activity as well to allow customize the number of data loaded.*/
     @GET("/posts")
     fun getPosts(
         @Query("_page") page: String,
