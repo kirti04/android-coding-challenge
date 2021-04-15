@@ -17,7 +17,8 @@ class PostDetailPresenter(private val getPostUseCase: GetPostUseCase) : KoinComp
     }
 
     fun unbind() {
-        if (!disposable.isDisposed) disposable.clear()
+        if (!disposable.isDisposed)
+            disposable.clear()
     }
 
     private fun loadPost(postId: Int) = getPostUseCase.execute(postId)

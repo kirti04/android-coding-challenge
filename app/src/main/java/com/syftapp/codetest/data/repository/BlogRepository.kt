@@ -35,10 +35,11 @@ class BlogRepository(
         )
     }
 
-    override fun getPosts(): Single<List<Post>> {
+    override fun getPosts(page: Int): Single<List<Post>> {
         return fetchData(
+            page = page,
             local = { postDao.getAll() },
-            remote = { blogApi.getPosts() },
+            remote = { blogApi.getPosts(page) },
             insert = { value -> postDao.insertAll(*value.toTypedArray()) }
         )
     }
@@ -48,20 +49,22 @@ class BlogRepository(
     }
 
     private fun <T> fetchData(
+        page: Int = 0,
         local: () -> Single<List<T>>,
         remote: () -> Single<List<T>>,
         insert: (insertValue: List<T>) -> Completable
     ): Single<List<T>> {
 
         return local.invoke()
-            .flatMap {
-                if (it.isNotEmpty()) {
-                    Single.just(it)
+            .flatMap { localPosts ->
+                if (localPosts.isNotEmpty() && page < 2) {
+                    Single.just(localPosts)
                 } else {
                     remote.invoke()
-                        .map { value ->
-                            insert.invoke(value).subscribe();
-                            value
+                        .map { remotePosts ->
+                            insert.invoke(remotePosts).subscribe()
+                            val combinedRemoteAndLocalData = localPosts + remotePosts
+                            combinedRemoteAndLocalData
                         }
                 }
             }

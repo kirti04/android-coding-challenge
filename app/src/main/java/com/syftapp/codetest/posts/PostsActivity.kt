@@ -1,6 +1,7 @@
 package com.syftapp.codetest.posts
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -16,19 +17,36 @@ class PostsActivity : AppCompatActivity(), PostsView, KoinComponent {
 
     private val presenter: PostsPresenter by inject()
     private lateinit var navigation: Navigation
-
     private lateinit var adapter: PostsAdapter
+    private var currentPage: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_posts)
         navigation = Navigation(this)
 
+        initView()
+        initListener()
+    }
+
+    private fun initView() {
+        swipeToRefresh.setOnRefreshListener { presenter.onRefresh() }
         listOfPosts.layoutManager = LinearLayoutManager(this)
         val separator = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
         listOfPosts.addItemDecoration(separator)
+        bindView()
+    }
 
-        presenter.bind(this)
+    private fun initListener() {
+        nestedScrollView.setOnScrollChangeListener(object : PaginationListener() {
+            override fun loadMore() {
+                bindView()
+            }
+        })
+    }
+
+    private fun bindView() {
+        presenter.bind(this, ++currentPage)
     }
 
     override fun onDestroy() {
@@ -49,7 +67,8 @@ class PostsActivity : AppCompatActivity(), PostsView, KoinComponent {
     private fun showLoading() {
         error.visibility = View.GONE
         listOfPosts.visibility = View.GONE
-        loading.visibility = View.VISIBLE
+        if (!swipeToRefresh.isRefreshing)
+            loading.visibility = View.VISIBLE
     }
 
     private fun hideLoading() {
@@ -60,13 +79,16 @@ class PostsActivity : AppCompatActivity(), PostsView, KoinComponent {
         // this is a fairly crude implementation, if it was Flowable, it would
         // be better to use DiffUtil and consider notifyRangeChanged, notifyItemInserted, etc
         // to preserve animations on the RecyclerView
-        adapter = PostsAdapter(posts, presenter)
+        adapter = PostsAdapter(presenter)
+        adapter.update(posts)
         listOfPosts.adapter = adapter
         listOfPosts.visibility = View.VISIBLE
+        swipeToRefresh.isRefreshing = false
     }
 
     private fun showError(message: String) {
+        swipeToRefresh.isRefreshing = false
         error.visibility = View.VISIBLE
-        error.setText(message)
+        error.text = message
     }
 }

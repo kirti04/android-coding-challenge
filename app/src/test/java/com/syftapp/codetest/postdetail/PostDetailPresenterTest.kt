@@ -6,6 +6,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.reactivex.Maybe
+import io.reactivex.internal.operators.maybe.MaybeError
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -18,6 +19,7 @@ class PostDetailPresenterTest {
 
     @MockK
     lateinit var getPostUseCase: GetPostUseCase
+
     @RelaxedMockK
     lateinit var view: PostDetailView
 

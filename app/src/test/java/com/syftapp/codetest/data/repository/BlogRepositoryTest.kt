@@ -19,10 +19,13 @@ class BlogRepositoryTest {
 
     @RelaxedMockK
     lateinit var postDao: PostDao
+
     @RelaxedMockK
     lateinit var commentDao: CommentDao
+
     @RelaxedMockK
     lateinit var userDao: UserDao
+
     @MockK
     lateinit var blogApi: BlogApi
 
@@ -49,20 +52,20 @@ class BlogRepositoryTest {
     fun `get posts returns cached values if available`() {
         every { postDao.getAll() } returns Single.just(listOf(anyPost))
 
-        val observer = sut.getPosts().test()
+        val observer = sut.getPosts(page = 1).test()
         observer.assertValue(listOf(anyPost))
-        verify(exactly = 0) { blogApi.getPosts() }
+        verify(exactly = 0) { blogApi.getPosts(page = 1) }
     }
 
     @Test
     fun `posts value fetched from api is inserted to the cache`() {
         every { postDao.getAll() } returns Single.just(listOf())
-        every { blogApi.getPosts() } returns Single.just(listOf(anyPost))
+        every { blogApi.getPosts(page = 1) } returns Single.just(listOf(anyPost))
 
-        sut.getPosts().test()
+        sut.getPosts(page = 1).test()
 
-        verify {
-            blogApi.getPosts()
+        verify(exactly = 1) {
+            blogApi.getPosts(page = 1)
             postDao.insertAll(*listOf(anyPost).toTypedArray())
         }
     }
@@ -74,7 +77,7 @@ class BlogRepositoryTest {
 
         sut.getUsers().test()
 
-        verify {
+        verify(exactly = 1) {
             blogApi.getUsers()
             userDao.insertAll(*listOf(anyUser).toTypedArray())
         }
@@ -84,10 +87,10 @@ class BlogRepositoryTest {
     fun `value from api is returned to caller`() {
         every { userDao.getAll() } returns Single.just(listOf())
         every { postDao.getAll() } returns Single.just(listOf())
-        every { blogApi.getPosts() } returns Single.just(listOf(anyPost))
+        every { blogApi.getPosts(page = 1) } returns Single.just(listOf(anyPost))
         every { blogApi.getUsers() } returns Single.just(listOf(anyUser))
 
-        val postObserver = sut.getPosts().test()
+        val postObserver = sut.getPosts(page = 1).test()
         val userObserver = sut.getUsers().test()
 
         postObserver.assertValue(listOf(anyPost))
@@ -95,12 +98,27 @@ class BlogRepositoryTest {
     }
 
     @Test
+    fun `post from api and cache is returned to caller when page is greater than 2`() {
+        every { userDao.getAll() } returns Single.just(listOf())
+        every { postDao.getAll() } returns Single.just(listOf(anyPost))
+
+        every { blogApi.getPosts(page = 2) } returns Single.just(listOf(anyPost))
+        every { blogApi.getUsers() } returns Single.just(listOf(anyUser))
+
+        val postObserver = sut.getPosts(page = 2).test()
+        val userObserver = sut.getUsers().test()
+
+        postObserver.assertValue(listOf(anyPost, anyPost))
+        userObserver.assertValue(listOf(anyUser))
+    }
+
+    @Test
     fun `api failing returns reactive error on chain`() {
         every { postDao.getAll() } returns Single.just(listOf())
         val error = Throwable()
-        every { blogApi.getPosts() } throws error
+        every { blogApi.getPosts(page = 1) } throws error
 
-        val observer = sut.getPosts().test()
+        val observer = sut.getPosts(page = 1).test()
 
         observer.assertError(error)
     }
